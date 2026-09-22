@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1319">
+<title>Facet Live, camera consult</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#0F1319; --surface:#171C24; --surface2:#1E2530; --ink:#ECF0F4; --muted:#98A3B1; --line:#2B3440;
+  --toxin:#B49AE6; --filler:#F293A8; --skinq:#63C3B8; --ok:#63C3B8; --warn:#F2B872;
+  --mesh:rgba(99,195,184,.32); --contour:rgba(236,240,244,.75);
+  --serif:"Fraunces", Georgia, "Times New Roman", serif;
+  --sans:"Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+h1,h2{margin:0;font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+h1{font-size:24px;line-height:1.15}
+h2{font-size:18px;line-height:1.25}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}
+main{background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 16px 8px;display:flex;align-items:center;gap:10px}
+.brand{font-family:var(--serif);font-weight:600;font-size:21px;letter-spacing:-.02em}
+.brand small{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--muted);margin-left:6px;letter-spacing:0}
+.status{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px}
+.status i{width:8px;height:8px;border-radius:999px;background:var(--muted)}
+.status.ok i{background:var(--ok)}
+.status.warn i{background:var(--warn)}
+
+main{flex:1;padding:0 16px 140px}
+.stage-wrap{display:flex;justify-content:center}
+.stage{position:relative;width:100%;aspect-ratio:3/4;background:#05080C;border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;transform:scaleX(-1);background:#05080C}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation}
+.stage .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;color:var(--muted)}
+.stage .empty b{color:var(--ink);font-family:var(--serif);font-weight:600;font-size:22px}
+.corner{position:absolute;display:flex;gap:6px;z-index:2}
+.corner.tl{top:10px;left:10px}
+.corner.tr{top:10px;right:10px}
+.pill{background:rgba(15,19,25,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500}
+.pill.on{background:var(--ok);color:#06110F;border-color:var(--ok)}
+.gauge{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;background:rgba(15,19,25,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 12px}
+.gauge .lbl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.gauge .bar{height:6px;border-radius:999px;background:rgba(255,255,255,.14);position:relative;overflow:hidden}
+.gauge .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ok);border-radius:999px;transition:width .12s linear}
+.gauge .bar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--warn)}
+
+.panel{padding:16px 2px 0}
+.panel > * + *{margin-top:12px}
+.lede{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .15s ease,opacity .2s ease}
+.btn:active{transform:scale(.985)}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.secondary{background:var(--surface);border:1px solid var(--line)}
+.btn.quiet{min-height:40px;color:var(--muted);font-weight:500;font-size:14px}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.list{display:flex;flex-direction:column}
+.item{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0;padding-top:0}
+.item:last-child{padding-bottom:0}
+.item .swatch{width:10px;height:10px;border-radius:999px;flex:none}
+.item .grow{flex:1;min-width:0}
+.item .sub{font-size:13px;color:var(--muted)}
+.item .val{font-family:var(--serif);font-weight:600;font-size:18px;white-space:nowrap}
+.item img{width:40px;height:53px;border-radius:8px;object-fit:cover;background:var(--surface2);flex:none}
+.check{width:22px;height:22px;border-radius:999px;border:1.5px solid var(--line);display:grid;place-items:center;flex:none;font-size:12px;color:var(--bg);transition:background .2s ease}
+.check.done{background:var(--ok);border-color:var(--ok)}
+.check.now{border-color:var(--ink);border-width:2px}
+.bignums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.big{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px}
+.big b{display:block;font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.05;letter-spacing:-.02em}
+.big span{font-size:12px;color:var(--muted)}
+.big .delta{font-size:12px;color:var(--ok);display:block;margin-top:2px}
+.big .delta.neg{color:var(--warn)}
+.foot{font-size:12px;color:var(--muted);line-height:1.45}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips.scroll::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:7px;background:var(--dot);vertical-align:middle}
+.empty-box{border:1.5px dashed var(--line);border-radius:18px;padding:16px;text-align:center;color:var(--muted)}
+.empty-box b{display:block;color:var(--ink);font-weight:600;margin-bottom:4px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.toggle:first-child{border-top:0;padding-top:0}
+.sw{width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s ease}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;background:var(--ink);transition:transform .2s ease}
+.sw.on{background:var(--ok)}
+.sw.on::after{transform:translateX(18px)}
+.err{background:rgba(242,184,114,.12);border:1px solid rgba(242,184,114,.4);border-radius:14px;padding:12px 14px;font-size:14px}
+
+nav.steps{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.steps .inner{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+nav.steps button{padding:12px 4px 10px;font-size:13px;font-weight:500;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:7px}
+nav.steps button i{display:block;width:34px;height:3px;border-radius:999px;background:var(--line)}
+nav.steps button.on{color:var(--ink)}
+nav.steps button.on i{background:var(--ink)}
+
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:8}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:9;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.sheet.open{transform:translateY(0)}
+.sheet .inner{max-width:480px;margin:0 auto;background:var(--surface);border-radius:22px 22px 0 0;padding:14px 18px calc(env(safe-area-inset-bottom,0px) + 18px);max-height:82vh;overflow:auto;box-shadow:0 -10px 40px rgba(0,0,0,.4)}
+.sheet .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 14px}
+.sheet .inner > * + *{margin-top:14px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field > span{font-size:13px;color:var(--muted)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:48px;height:48px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-size:22px;font-weight:500}
+.stepper input{flex:1;height:48px;border:1px solid var(--line);border-radius:14px;background:var(--bg);text-align:center;font-family:var(--serif);font-size:24px;font-weight:600;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none}
+.stepper .unit{width:40px;font-size:14px;color:var(--muted)}
+select.sel{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);padding:0 12px;-webkit-appearance:none;appearance:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{padding:10px;font-weight:500;background:var(--surface)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;opacity:0;transition:opacity .25s ease,transform .25s ease;z-index:20;max-width:90vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Facet<small>Live</small></div>
+    <div class="status" id="status"><i></i><span id="statusText">Camera off</span></div>
+  </header>
+  <main>
+    <div class="stage-wrap"><div class="stage" id="stage">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+      <div class="empty" id="stageEmpty"><b>Facet Live</b><span>Real face tracking on your camera. Tap Start camera below.</span></div>
+      <div class="corner tl" id="cornerTL" hidden><button class="pill" id="meshBtn">Mesh on</button></div>
+      <div class="corner tr" id="cornerTR" hidden><button class="pill" id="freezeBtn">Freeze</button></div>
+      <div class="gauge" id="gauge" hidden><div class="lbl"><span id="gaugeName"></span><span id="gaugeVal"></span></div><div class="bar"><i id="gaugeFill"></i><em id="gaugeThr"></em></div></div>
+    </div></div>
+    <section class="panel" id="panel"></section>
+  </main>
+  <nav class="steps"><div class="inner">
+    <button data-mode="capture"><i></i>Capture</button>
+    <button data-mode="chart"><i></i>Chart</button>
+    <button data-mode="measure"><i></i>Measure</button>
+  </div></nav>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="inner" id="sheetInner"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const video = $('#video'), canvas = $('#overlay'), ctx = canvas.getContext('2d'), stage = $('#stage'), panel = $('#panel');
+const sheet = $('#sheet'), sheetInner = $('#sheetInner'), scrim = $('#scrim');
+
+const PRODUCTS = [
+  {id:'botox',    name:'Botox Cosmetic',       kind:'toxin',  unit:'U',  step:1,   cssColor:'--toxin'},
+  {id:'voluma',   name:'Juvederm Voluma XC',   kind:'filler', unit:'mL', step:0.1, cssColor:'--filler'},
+  {id:'volux',    name:'Juvederm Volux XC',    kind:'filler', unit:'mL', step:0.1, cssColor:'--filler'},
+  {id:'vollure',  name:'Juvederm Vollure XC',  kind:'filler', unit:'mL', step:0.1, cssColor:'--filler'},
+  {id:'volbella', name:'Juvederm Volbella XC', kind:'filler', unit:'mL', step:0.1, cssColor:'--filler'},
+  {id:'ultra',    name:'Juvederm Ultra XC',    kind:'filler', unit:'mL', step:0.1, cssColor:'--filler'},
+  {id:'skinvive', name:'Skinvive by Juvederm', kind:'skin',   unit:'mL', step:0.1, cssColor:'--skinq'}
+];
+const DEPTHS = ['Intramuscular','Intradermal','Subdermal','Supraperiosteal'];
+const TECHS  = ['Bolus','Linear thread','Fanning','Serial puncture','Microdroplet'];
+const ANCHORS = [
+  ['Forehead',        [10,151,67,297,103,332,109,338], false],
+  ['Glabella',        [9,8,107,336], false],
+  ['Temple',          [21,251,54,284,71,301], true],
+  ["Crow's feet",     [226,446,130,359,113,342], true],
+  ['Under eye',       [117,346,118,347,111,340], true],
+  ['Nose',            [1,4,5,195,197,6,168], false],
+  ['Cheek',           [50,280,205,425,116,345,123,352,101,330], true],
+  ['Nasolabial fold', [203,423,206,426,216,436,207,427], true],
+  ['Upper lip',       [0,37,267,39,269,40,270,13,82,312], false],
+  ['Lower lip',       [17,84,314,181,405,14,87,317], false],
+  ['Mouth corner',    [61,291], true],
+  ['Marionette',      [32,262,194,418,210,430,212,432], true],
+  ['Chin',            [152,175,199,200,18,201,421], false],
+  ['Jawline',         [172,397,136,365,150,379,176,400], true],
+  ['Masseter',        [58,288,132,361,93,323,137,366], true]
+];
+const REGIONS = ANCHORS.map(a => a[0]);
+const SIDED = new Set(ANCHORS.filter(a => a[2]).map(a => a[0]));
+const EXPR = [
+  {id:'rest',  label:'Neutral',    prompt:'Hold a neutral expression', thr:.8,  hold:900,
+    score:m => 1 - Math.max(m.browInnerUp||0, avg(m,'mouthSmileLeft','mouthSmileRight'), avg(m,'browDownLeft','browDownRight'), m.jawOpen||0)},
+  {id:'smile', label:'Smile',      prompt:'Big smile',                 thr:.55, hold:600, score:m => avg(m,'mouthSmileLeft','mouthSmileRight')},
+  {id:'frown', label:'Frown',      prompt:'Pull the brows together',   thr:.35, hold:600, score:m => avg(m,'browDownLeft','browDownRight')},
+  {id:'raise', label:'Brow raise', prompt:'Raise the eyebrows',        thr:.5,  hold:600, score:m => Math.max(m.browInnerUp||0, avg(m,'browOuterUpLeft','browOuterUpRight'))}
+];
+function avg(m,a,b){ return ((m[a]||0)+(m[b]||0))/2; }
+
+const S = {
+  mode:'capture', cam:'off', err:'', mesh:true, frozen:false,
+  cap:{status:'idle', i:0, done:[], thumbs:{}, max:{}, sym:{}, hold:0, lastT:0},
+  points:[], last:{}, lastProduct:null, nextId:1, price:{unit:14, ml:800}, baseline:null, undoId:null
+};
+try{ const b = localStorage.getItem('facet.baseline'); if (b) S.baseline = JSON.parse(b); }catch(e){}
+
+let landmarker = null, modelReady = null, lastResult = null, lastVideoTime = -1, running = false, faceSeen = false;
+const colors = {};
+function readColors(){ const cs = getComputedStyle(document.documentElement); for (const k of ['--toxin','--filler','--skinq','--ok','--ink','--mesh','--contour','--warn']) colors[k] = cs.getPropertyValue(k).trim(); }
+readColors();
+
+// Model
+modelReady = (async () => {
+  try{
+    setStatus('Loading face model', '');
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    landmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate:"GPU" },
+      runningMode:"VIDEO", numFaces:1, outputFaceBlendshapes:true, outputFacialTransformationMatrixes:false
+    });
+    if (S.cam !== 'on') setStatus('Model ready, camera off', '');
+  }catch(e){ S.err = window.top !== window.self ? 'This viewer blocks the face model and the camera. Host the file and open the link in Safari.' : 'The face model could not load. Check the connection and reload.'; setStatus('Model failed', 'warn'); render(); }
+})();
+
+function setStatus(t, cls){ $('#statusText').textContent = t; $('#status').className = 'status ' + (cls||''); }
+
+// Camera
+async function startCamera(){
+  if (S.cam === 'starting' || S.cam === 'on') return;
+  S.cam = 'starting'; S.err = ''; render();
+  try{
+    if (!window.isSecureContext || location.protocol === 'file:') throw new Error('insecure');
+    if (window.top !== window.self || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('embedded');
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:720}, height:{ideal:960} }, audio:false });
+    video.srcObject = stream;
+    await new Promise(res => { if (video.readyState >= 1) res(); else video.onloadedmetadata = () => res(); });
+    await video.play();
+    fitStage();
+    video.addEventListener('resize', fitStage);
+    await modelReady;
+    if (!landmarker) throw new Error('model');
+    S.cam = 'on'; running = true;
+    $('#stageEmpty').hidden = true; $('#cornerTL').hidden = false; $('#cornerTR').hidden = false;
+    setStatus('Looking for a face', 'warn');
+    requestAnimationFrame(loop);
+  }catch(e){
+    S.cam = 'error';
+    S.err = e && e.message === 'insecure' ? 'The camera only works from a hosted HTTPS link opened in Safari or Chrome, not from a file or a preview.'
+      : e && e.message === 'embedded' ? 'This viewer cannot use the camera. Host the file (GitHub Pages works) and open the link in Safari.'
+      : (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) ? 'Camera permission was denied. Allow camera access for this site and try again.'
+      : e && e.message === 'model' ? 'The face model is not available. Check the connection and reload.'
+      : 'The camera could not start. Close other apps using it and try again.';
+  }
+  render();
+}
+function fitStage(){
+  const w = video.videoWidth || 720, h = video.videoHeight || 960;
+  canvas.width = w; canvas.height = h;
+  const aspect = w / h;
+  const maxH = Math.max(320, window.innerHeight * 0.58);
+  const wrapW = stage.parentElement.clientWidth;
+  const width = Math.min(wrapW, maxH * aspect);
+  stage.style.width = width + 'px';
+  stage.style.aspectRatio = `${w} / ${h}`;
+}
+window.addEventListener('resize', () => { if (S.cam === 'on') fitStage(); });
+
+function loop(){
+  if (!running) return;
+  if (!S.frozen && video.readyState >= 2 && video.currentTime !== lastVideoTime){
+    lastVideoTime = video.currentTime;
+    try{ lastResult = landmarker.detectForVideo(video, performance.now()); }catch(e){}
+    const has = !!(lastResult && lastResult.faceLandmarks && lastResult.faceLandmarks[0]);
+    if (has !== faceSeen){ faceSeen = has; setStatus(has ? 'Tracking face' : 'Looking for a face', has ? 'ok' : 'warn'); }
+    if (has && S.cap.status === 'active') stepCapture(performance.now());
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function blend(res){ const m = {}; const b = res && res.faceBlendshapes && res.faceBlendshapes[0]; if (b) for (const c of b.categories) m[c.categoryName] = c.score; return m; }
+function lm(){ return lastResult && lastResult.faceLandmarks && lastResult.faceLandmarks[0]; }
+function P(pts, i){ return [(1 - pts[i].x) * canvas.width, pts[i].y * canvas.height]; }
+
+// Capture state machine
+function startCapture(){
+  Object.assign(S.cap, {status:'active', i:0, done:[], thumbs:{}, max:{}, sym:{}, hold:0, lastT:performance.now()});
+  setFrozen(false); S.mode = 'capture'; render();
+}
+function stepCapture(now){
+  const ex = EXPR[S.cap.i]; if (!ex) return;
+  const m = blend(lastResult), sc = ex.score(m);
+  const dt = Math.min(100, now - S.cap.lastT); S.cap.lastT = now;
+  if (ex.id !== 'rest') S.cap.max[ex.id] = Math.max(S.cap.max[ex.id] || 0, sc);
+  S.cap.hold = sc >= ex.thr ? S.cap.hold + dt : Math.max(0, S.cap.hold - dt * 1.5);
+  updateGauge(ex, sc);
+  if (S.cap.hold >= ex.hold){
+    if (ex.id === 'smile') S.cap.sym.smile = symmetry(m.mouthSmileLeft, m.mouthSmileRight);
+    if (ex.id === 'frown') S.cap.sym.frown = symmetry(m.browDownLeft, m.browDownRight);
+    if (ex.id === 'raise') S.cap.sym.raise = symmetry(m.browOuterUpLeft, m.browOuterUpRight);
+    S.cap.thumbs[ex.id] = thumbnail();
+    S.cap.done.push(ex.id); S.cap.i++; S.cap.hold = 0;
+    if (S.cap.i >= EXPR.length){ S.cap.status = 'done'; $('#gauge').hidden = true; toast('Capture complete'); }
+    render();
+  }
+}
+function symmetry(l, r){ l = l||0; r = r||0; const mx = Math.max(l, r, 0.01); return 1 - Math.abs(l - r) / mx; }
+function skipStep(){ const ex = EXPR[S.cap.i]; if (!ex) return; S.cap.done.push(ex.id); S.cap.i++; S.cap.hold = 0; if (S.cap.i >= EXPR.length){ S.cap.status = 'done'; $('#gauge').hidden = true; } render(); }
+function updateGauge(ex, sc){
+  const g = $('#gauge'); g.hidden = false;
+  $('#gaugeName').textContent = ex.prompt; $('#gaugeVal').textContent = Math.round(sc * 100) + '%';
+  $('#gaugeFill').style.width = Math.min(100, sc * 100) + '%'; $('#gaugeThr').style.left = (ex.thr * 100) + '%';
+}
+function thumbnail(){
+  try{
+    const c = document.createElement('canvas'); c.width = 120; c.height = 160; const x = c.getContext('2d');
+    x.translate(120, 0); x.scale(-1, 1); x.drawImage(video, 0, 0, 120, 160);
+    return c.toDataURL('image/jpeg', .7);
+  }catch(e){ return ''; }
+}
+
+// Drawing
+function drawConn(pts, conns, color, width){
+  ctx.beginPath();
+  for (const c of conns){ const a = P(pts, c.start), b = P(pts, c.end); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+}
+function draw(){
+  const W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
+  const pts = lm(); if (!pts) return;
+  const sc = W / 720;
+  if (S.mesh) drawConn(pts, FaceLandmarker.FACE_LANDMARKS_TESSELATION, colors['--mesh'], 0.7 * sc);
+  const ex = S.cap.status === 'active' ? EXPR[S.cap.i] : null;
+  const hi = colors['--ok'];
+  const c = colors['--contour'];
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, c, 1.2 * sc);
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, c, 1.2 * sc);
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, c, 1.2 * sc);
+  const browC = ex && (ex.id === 'frown' || ex.id === 'raise') ? hi : c, lipC = ex && ex.id === 'smile' ? hi : c;
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, browC, 2 * sc);
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, browC, 2 * sc);
+  drawConn(pts, FaceLandmarker.FACE_LANDMARKS_LIPS, lipC, 1.6 * sc);
+  for (const pt of S.points){
+    const p = PRODUCTS.find(x => x.id === pt.product); const [x, y] = P(pts, pt.lm);
+    ctx.beginPath(); ctx.arc(x, y, 9 * sc, 0, Math.PI * 2); ctx.fillStyle = colors[p.cssColor]; ctx.fill();
+    ctx.lineWidth = 2.5 * sc; ctx.strokeStyle = 'rgba(15,19,25,.9)'; ctx.stroke();
+    ctx.font = `600 ${13 * sc}px Instrument Sans, Arial, sans-serif`; ctx.fillStyle = colors['--ink'];
+    ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 4 * sc; ctx.fillText(fmtAmt(p, pt.amount), x + 13 * sc, y + 5 * sc); ctx.shadowBlur = 0;
+  }
+  if (pending && !pending.id && pending.lm != null){
+    const [x, y] = P(pts, pending.lm); ctx.beginPath(); ctx.arc(x, y, 12 * sc, 0, Math.PI * 2);
+    ctx.setLineDash([4 * sc, 3 * sc]); ctx.strokeStyle = colors['--ink']; ctx.lineWidth = 2 * sc; ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+// Freeze
+function setFrozen(f){
+  S.frozen = f; $('#freezeBtn').textContent = f ? 'Resume' : 'Freeze'; $('#freezeBtn').classList.toggle('on', f);
+  if (f){ video.pause(); setStatus('Frozen frame', 'ok'); } else { video.play().catch(()=>{}); faceSeen = false; }
+}
+$('#freezeBtn').addEventListener('click', () => setFrozen(!S.frozen));
+$('#meshBtn').addEventListener('click', () => { S.mesh = !S.mesh; $('#meshBtn').textContent = S.mesh ? 'Mesh on' : 'Mesh off'; });
+
+// Tapping the face
+function nearestLandmark(pts, x, y){
+  let best = -1, bd = Infinity;
+  for (let i = 0; i < pts.length; i++){ const [px, py] = P(pts, i); const d = (px-x)**2 + (py-y)**2; if (d < bd){ bd = d; best = i; } }
+  return {i:best, d:Math.sqrt(bd)};
+}
+function regionFor(pts, i){
+  const [x, y] = P(pts, i); let best = null, bd = Infinity;
+  for (const [name, idx, sided] of ANCHORS){ for (const a of idx){ const [ax, ay] = P(pts, a); const d = (ax-x)**2 + (ay-y)**2; if (d < bd){ bd = d; best = [name, sided]; } } }
+  const side = pts[i].x < pts[1].x ? 'R' : 'L';
+  return {name:best[0], side: best[1] ? side : null};
+}
+function mirrorIndex(pts, i){
+  const xr = 2 * pts[1].x - pts[i].x, y = pts[i].y; let best = i, bd = Infinity;
+  for (let k = 0; k < pts.length; k++){ const d = (pts[k].x - xr)**2 + (pts[k].y - y)**2; if (d < bd){ bd = d; best = k; } }
+  return best;
+}
+canvas.addEventListener('click', e => {
+  if (S.mode !== 'chart' || S.cam !== 'on') return;
+  const pts = lm(); if (!pts){ toast('No face in frame'); return; }
+  const r = canvas.getBoundingClientRect(); const x = (e.clientX - r.left) * canvas.width / r.width, y = (e.clientY - r.top) * canvas.height / r.height;
+  const sc = canvas.width / 720;
+  for (const pt of S.points){ const [px, py] = P(pts, pt.lm); if (Math.hypot(px-x, py-y) < 20 * sc){ openSheet(Object.assign({}, pt)); return; } }
+  const n = nearestLandmark(pts, x, y); if (n.d > 60 * sc){ return; }
+  const reg = regionFor(pts, n.i), product = S.lastProduct || 'botox', prod = PRODUCTS.find(p => p.id === product);
+  openSheet({lm:n.i, region:reg.name, side:reg.side, product, amount:S.last[product] || 0, depth: prod.kind === 'toxin' ? 'Intramuscular' : prod.kind === 'skin' ? 'Intradermal' : 'Subdermal', tech: prod.kind === 'skin' ? 'Microdroplet' : 'Bolus', delivery:'Needle', mirror:false});
+});
+
+// Sheet
+let pending = null;
+const prodOf = id => PRODUCTS.find(p => p.id === id);
+const fmtAmt = (p, a) => p.unit === 'U' ? `${a} U` : `${a.toFixed(1)} mL`;
+const regionLabel = r => r.side ? `${r.side === 'L' ? 'Left' : 'Right'} ${r.name.toLowerCase()}` : r.name;
+function openSheet(p){ pending = p; renderSheet(); sheet.classList.add('open'); scrim.classList.add('open'); }
+function closeSheet(){ pending = null; sheet.classList.remove('open'); scrim.classList.remove('open'); }
+scrim.addEventListener('click', closeSheet);
+function renderSheet(){
+  const p = pending, prod = prodOf(p.product), editing = !!p.id;
+  sheetInner.innerHTML = `
+    <div class="grab"></div>
+    <div><h2>${editing ? 'Edit point' : 'New point'}</h2><p class="small muted">Anchored to the tracked face, it follows the patient. Sides are the patient's.</p></div>
+    <div class="field"><span>Region</span><div class="row">
+      <select class="sel" data-f="region">${REGIONS.map(r => `<option ${r===p.region?'selected':''}>${r}</option>`).join('')}</select>
+      ${SIDED.has(p.region) ? `<div class="seg" style="flex:none;width:130px"><button data-side="L" class="${p.side==='L'?'on':''}">Left</button><button data-side="R" class="${p.side==='R'?'on':''}">Right</button></div>` : ''}
+    </div></div>
+    <div class="field"><span>Product</span><div class="chips scroll">${PRODUCTS.map(x => `<button class="chip ${x.id===p.product?'on':''}" data-prod="${x.id}" style="--dot:var(${x.cssColor})"><i class="dot"></i>${x.name}</button>`).join('')}</div></div>
+    <div class="field"><span>Amount</span><div class="stepper">
+      <button data-step="-1" aria-label="Less">&minus;</button>
+      <input type="number" inputmode="decimal" data-f="amount" value="${prod.unit==='U' ? p.amount : p.amount.toFixed(1)}" step="${prod.step}" min="0">
+      <span class="unit">${prod.unit}</span>
+      <button data-step="1" aria-label="More">+</button>
+    </div></div>
+    <div class="field"><span>Depth</span><div class="chips">${DEPTHS.map(d => `<button class="chip ${d===p.depth?'on':''}" data-depth="${d}">${d}</button>`).join('')}</div></div>
+    <div class="field"><span>Technique</span><div class="chips">${TECHS.map(t => `<button class="chip ${t===p.tech?'on':''}" data-tech="${t}">${t}</button>`).join('')}</div></div>
+    <div class="field"><span>Delivery</span><div class="seg"><button data-del="Needle" class="${p.delivery==='Needle'?'on':''}">Needle</button><button data-del="Cannula" class="${p.delivery==='Cannula'?'on':''}">Cannula</button></div></div>
+    ${!editing && p.side ? `<div class="toggle"><span>Mirror to the other side</span><button class="sw ${p.mirror?'on':''}" data-act="mirror" aria-label="Mirror"></button></div>` : ''}
+    <div class="row">
+      ${editing ? `<button class="btn secondary" data-act="remove">Remove</button>` : `<button class="btn secondary" data-act="cancel">Cancel</button>`}
+      <button class="btn primary" data-act="save" ${p.amount > 0 ? '' : 'disabled'}>${editing ? 'Save' : 'Add point'}</button>
+    </div>`;
+}
+sheetInner.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !pending) return;
+  const p = pending, prod = prodOf(p.product);
+  if (b.dataset.prod){ p.product = b.dataset.prod; const np = prodOf(p.product); p.amount = S.last[p.product] || 0; p.depth = np.kind === 'toxin' ? 'Intramuscular' : np.kind === 'skin' ? 'Intradermal' : 'Subdermal'; if (np.kind === 'skin') p.tech = 'Microdroplet'; renderSheet(); return; }
+  if (b.dataset.step){ p.amount = Math.max(0, +(p.amount + (+b.dataset.step) * prod.step).toFixed(1)); renderSheet(); return; }
+  if (b.dataset.depth){ p.depth = b.dataset.depth; renderSheet(); return; }
+  if (b.dataset.tech){ p.tech = b.dataset.tech; renderSheet(); return; }
+  if (b.dataset.del){ p.delivery = b.dataset.del; renderSheet(); return; }
+  if (b.dataset.side){ const pts = lm(); if (b.dataset.side !== p.side && pts && !p.id) p.lm = mirrorIndex(pts, p.lm); p.side = b.dataset.side; renderSheet(); return; }
+  const act = b.dataset.act;
+  if (act === 'mirror'){ p.mirror = !p.mirror; renderSheet(); }
+  if (act === 'cancel') closeSheet();
+  if (act === 'remove'){ S.points = S.points.filter(x => x.id !== p.id); closeSheet(); render(); toast('Point removed'); }
+  if (act === 'save'){
+    if (p.amount <= 0) return;
+    S.last[p.product] = p.amount; S.lastProduct = p.product;
+    const base = {region:p.region, side:p.side, product:p.product, amount:p.amount, depth:p.depth, tech:p.tech, delivery:p.delivery};
+    if (p.id) Object.assign(S.points.find(x => x.id === p.id), base);
+    else {
+      const id = S.nextId++; S.points.push(Object.assign({id, lm:p.lm}, base)); S.undoId = id;
+      if (p.mirror){ const pts = lm(); if (pts){ S.points.push(Object.assign({id:S.nextId++, lm:mirrorIndex(pts, p.lm)}, base, {side: p.side === 'L' ? 'R' : 'L'})); } }
+    }
+    closeSheet(); render();
+  }
+});
+sheetInner.addEventListener('change', e => {
+  if (!pending) return;
+  if (e.target.dataset.f === 'region'){ pending.region = e.target.value; if (!SIDED.has(pending.region)) pending.side = null; else if (!pending.side){ const pts = lm(); pending.side = pts && pts[pending.lm].x < pts[1].x ? 'R' : 'L'; } renderSheet(); }
+  if (e.target.dataset.f === 'amount'){ pending.amount = Math.max(0, +(+e.target.value || 0).toFixed(1)); renderSheet(); }
+});
+
+// Totals, export
+function totals(){
+  const byProd = {}; for (const pt of S.points) byProd[pt.product] = (byProd[pt.product] || 0) + pt.amount;
+  const units = byProd.botox || 0, ml = PRODUCTS.filter(p => p.unit === 'mL').reduce((a, p) => a + (byProd[p.id] || 0), 0);
+  return {byProd, units, ml, value: units * S.price.unit + ml * S.price.ml};
+}
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+function planText(){
+  const t = totals();
+  const lines = S.points.map((pt, i) => { const p = prodOf(pt.product); return `${i+1}. ${regionLabel(pt)}: ${fmtAmt(p, pt.amount)} ${p.name}, ${pt.tech.toLowerCase()}, ${pt.depth.toLowerCase()}, ${pt.delivery.toLowerCase()}`; });
+  return `Facet treatment plan, ${new Date().toLocaleDateString()}\n${lines.join('\n')}\nTotal: ${t.units} U toxin, ${t.ml.toFixed(1)} mL filler`;
+}
+async function snapshot(){
+  if (S.cam !== 'on'){ toast('Start the camera first'); return; }
+  const W = canvas.width, H = canvas.height, off = document.createElement('canvas'); off.width = W; off.height = H + Math.round(H * .12);
+  const c = off.getContext('2d'); c.fillStyle = '#0F1319'; c.fillRect(0, 0, off.width, off.height);
+  c.save(); c.translate(W, 0); c.scale(-1, 1); c.drawImage(video, 0, 0, W, H); c.restore(); c.drawImage(canvas, 0, 0);
+  const t = totals(), sc = W / 720;
+  c.fillStyle = '#ECF0F4'; c.font = `600 ${26 * sc}px Fraunces, Georgia, serif`; c.fillText('Facet plan', 24 * sc, H + 40 * sc);
+  c.font = `500 ${18 * sc}px Instrument Sans, Arial, sans-serif`; c.fillStyle = '#98A3B1';
+  c.fillText(`${S.points.length} points, ${t.units} U toxin, ${t.ml.toFixed(1)} mL filler, ${new Date().toLocaleDateString()}`, 24 * sc, H + 72 * sc);
+  off.toBlob(async blob => {
+    const file = new File([blob], 'facet-plan.png', {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file], title:'Facet plan'}); }catch(e){} }
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'facet-plan.png'; a.click(); }
+  }, 'image/png');
+}
+
+// Panels
+function render(){
+  $$('nav.steps button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  panel.innerHTML = ({capture: capturePanel, chart: chartPanel, measure: measurePanel})[S.mode]();
+}
+function metricRows(){
+  const m = S.cap.max, sym = S.cap.sym;
+  return [
+    {id:'raise', label:'Brow raise', v:m.raise},
+    {id:'frown', label:'Frown', v:m.frown},
+    {id:'smile', label:'Smile', v:m.smile}
+  ].map(r => Object.assign(r, {sym: sym[r.id]}));
+}
+function capturePanel(){
+  if (S.err) return `<div class="err">${S.err}</div><button class="btn primary" data-act="start">Try again</button>`;
+  if (S.cam !== 'on') return `
+    <div><h1>Real tracking, real face</h1><p class="lede">Facet Live runs a 478-point face model on this device. Nothing leaves the phone.</p></div>
+    <button class="btn primary" data-act="start" ${S.cam==='starting'?'disabled':''}>${S.cam==='starting' ? 'Starting' : 'Start camera'}</button>
+    <p class="foot">Front camera, portrait, good light. Allow camera access when asked.</p>`;
+  if (S.cap.status === 'active'){
+    const ex = EXPR[S.cap.i];
+    return `
+      <div><h1>${ex.prompt}</h1><p class="lede">Expression ${S.cap.i + 1} of 4. Hold it until the bar fills past the marker.</p></div>
+      <div class="card"><div class="list">${EXPR.map(x => `<div class="item"><div class="check ${S.cap.done.includes(x.id)?'done':(x.id===ex.id?'now':'')}">${S.cap.done.includes(x.id)?'&#10003;':''}</div><div class="grow">${x.label}</div>${S.cap.thumbs[x.id] ? `<img src="${S.cap.thumbs[x.id]}" alt="">` : ''}</div>`).join('')}</div></div>
+      <button class="btn quiet" data-act="skip">Skip this expression</button>`;
+  }
+  if (S.cap.status === 'done'){
+    return `
+      <div><h1>Capture complete</h1><p class="lede">Four expressions measured from real muscle movement. This is the baseline a follow-up scan is compared against.</p></div>
+      <div class="card"><div class="list">${EXPR.map(x => `<div class="item"><div class="check done">&#10003;</div><div class="grow">${x.label}${x.id !== 'rest' && S.cap.max[x.id] != null ? `<div class="sub">${Math.round(S.cap.max[x.id]*100)}% movement</div>` : ''}</div>${S.cap.thumbs[x.id] ? `<img src="${S.cap.thumbs[x.id]}" alt="">` : ''}</div>`).join('')}</div></div>
+      <button class="btn primary" data-act="mode" data-to="chart">Chart on the live face</button>
+      <button class="btn quiet" data-act="capture">Recapture</button>`;
+  }
+  return `
+    <div><h1>Capture movement</h1><p class="lede">Facet watches for each expression and records how far the muscles actually move.</p></div>
+    <button class="btn primary" data-act="capture">Start capture</button>
+    <button class="btn quiet" data-act="mode" data-to="chart">Skip to charting</button>`;
+}
+function chartPanel(){
+  if (S.cam !== 'on') return `<div class="empty-box"><b>Camera is off</b>Start the camera on the Capture tab, then tap the face to chart.</div>`;
+  const t = totals();
+  const body = S.points.length
+    ? `<div class="card"><div class="list">${S.points.map(pt => { const p = prodOf(pt.product); return `<div class="item"><div class="swatch" style="background:var(${p.cssColor})"></div><div class="grow"><div>${regionLabel(pt)}</div><div class="sub">${p.name}, ${pt.tech.toLowerCase()}, ${pt.depth.toLowerCase()}, ${pt.delivery.toLowerCase()}</div></div><div class="val">${fmtAmt(p, pt.amount)}</div></div>`; }).join('')}</div></div>`
+    : `<div class="empty-box"><b>No points yet</b>Tap the face above. Freeze the frame first if the patient is moving.</div>`;
+  return `
+    <div><h1>Chart the plan</h1><p class="lede">Points anchor to the tracked face and follow it. Tap a point to edit.</p></div>
+    <button class="btn secondary" data-act="freeze">${S.frozen ? 'Resume live view' : 'Freeze the frame'}</button>
+    ${body}
+    ${S.points.length ? `<div class="bignums"><div class="big"><b>${t.units}</b><span>Botox units</span></div><div class="big"><b>${t.ml.toFixed(1)}</b><span>mL of filler</span></div><div class="big"><b>${money(t.value)}</b><span>consult value</span></div></div>` : ''}
+    ${S.points.length ? `<div class="row"><button class="btn secondary" data-act="copy">Copy plan</button><button class="btn primary" data-act="snap">Save snapshot</button></div>` : ''}
+    ${S.points.length ? `<div class="row"><button class="btn quiet" data-act="undo">Undo last point</button><button class="btn quiet" data-act="clear">Clear all</button></div>` : ''}
+    <p class="foot">Facet records the injector's decisions. It never recommends a product, a dose, or a site.</p>`;
+}
+function measurePanel(){
+  if (S.cap.status !== 'done') return `
+    <div><h1>Measure movement</h1><p class="lede">Run a capture first. Each expression is scored from the face model's muscle-movement estimates, not from a photo.</p></div>
+    <div class="empty-box"><b>No capture yet</b>Go to Capture and run the four expressions.</div>
+    ${S.baseline ? `<p class="foot">A baseline from ${new Date(S.baseline.date).toLocaleDateString()} is stored on this phone. Run a capture to compare.</p>` : ''}`;
+  const rows = metricRows(); const b = S.baseline;
+  return `
+    <div><h1>Movement and symmetry</h1><p class="lede">${b ? `Compared with the baseline from ${new Date(b.date).toLocaleDateString()}.` : 'Set this capture as the baseline, then rescan after treatment to see the change.'}</p></div>
+    <div class="bignums">${rows.map(r => { const v = r.v == null ? null : Math.round(r.v * 100); let d = ''; if (b && b.max[r.id] != null && r.v != null){ const pct = Math.round((r.v - b.max[r.id]) / Math.max(b.max[r.id], .01) * 100); d = `<span class="delta ${pct < 0 ? 'neg' : ''}">${pct > 0 ? '+' : ''}${pct}% vs baseline</span>`; } return `<div class="big"><b>${v == null ? '–' : v + '%'}</b><span>${r.label}</span>${d}</div>`; }).join('')}</div>
+    <div class="card"><div class="list">${rows.filter(r => r.sym != null).map(r => `<div class="item"><div class="grow">${r.label} symmetry<div class="sub">Left versus right at peak</div></div><div class="val">${Math.round(r.sym * 100)}%</div></div>`).join('') || '<div class="item"><div class="grow muted">Symmetry needs a completed smile, frown, or brow raise.</div></div>'}</div></div>
+    <div class="row"><button class="btn secondary" data-act="capture">Rescan</button><button class="btn primary" data-act="baseline">${b ? 'Replace baseline' : 'Set as baseline'}</button></div>
+    ${b ? `<button class="btn quiet" data-act="clearBase">Clear baseline</button>` : ''}
+    <p class="foot">Scores are the model's estimates of expression intensity, useful for tracking change in the same patient over time. They aren't a clinical measurement.</p>`;
+}
+panel.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'start') startCamera();
+  if (act === 'capture') startCapture();
+  if (act === 'skip') skipStep();
+  if (act === 'mode'){ S.mode = b.dataset.to; render(); }
+  if (act === 'freeze'){ setFrozen(!S.frozen); render(); }
+  if (act === 'undo'){ if (S.undoId != null){ S.points = S.points.filter(p => p.id !== S.undoId); S.undoId = null; } else S.points.pop(); render(); }
+  if (act === 'clear'){ S.points = []; render(); }
+  if (act === 'copy'){ navigator.clipboard && navigator.clipboard.writeText(planText()).then(() => toast('Plan copied')).catch(() => toast('Copy not available here')); }
+  if (act === 'snap') snapshot();
+  if (act === 'baseline'){ S.baseline = {date:Date.now(), max:Object.assign({}, S.cap.max), sym:Object.assign({}, S.cap.sym)}; try{ localStorage.setItem('facet.baseline', JSON.stringify(S.baseline)); }catch(e){} render(); toast('Baseline saved on this phone'); }
+  if (act === 'clearBase'){ S.baseline = null; try{ localStorage.removeItem('facet.baseline'); }catch(e){} render(); }
+});
+$$('nav.steps button').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; closeSheet(); render(); }));
+
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+
+document.addEventListener('visibilitychange', () => { if (document.hidden && S.cam === 'on' && !S.frozen) video.pause(); else if (!document.hidden && S.cam === 'on' && !S.frozen) video.play().catch(()=>{}); });
+render();
+</script>
+</body>
+</html>
